@@ -12,11 +12,11 @@ The agent-workforce repo is up: github.com/masterjedi-ob1/agent-workforce. Plan,
 
 This week is touch week. Six of eight Tier 1 deals have had no client-facing message in three weeks. The full plan is at docs/outreach/2026-09-07_first-outreach-plan.md. Short version:
 
-Mon: NeuralSeek (Lawrence, reply on his Aug 20 thread) and Troveo (Sarah, answer her soft close).
-Tue: Sunnie / Athens (reopen, one co-pursuit, one date) and Berman & Killeen (Chloe sends the delivery update).
-Wed: A2C (close-or-kill) and PaySitters (confirm Phase 1 invoice path, keep it short, it is warm).
-Thu: Archway and CeCe TV get a decision, not a send.
-Fri: scorecard.
+Tue: NeuralSeek (Lawrence, reply on his Aug 20 thread) and Troveo (Sarah, answer her soft close).
+Wed: Sunnie / Athens (reopen, one co-pursuit, one date) and Berman & Killeen (Chloe sends the delivery update).
+Thu: A2C (close-or-kill) and PaySitters (confirm Phase 1 invoice path, keep it short, it is warm).
+Fri: Archway and CeCe TV get a decision, not a send.
+Fri EOD: scorecard.
 
 Your half:
 1. Confirm each send lands in Chris's mailbox and stamp the deal record with date, channel, and angle.

@@ -7,7 +7,7 @@
 
 | Deal | Last real touch | Days | State | Verdict |
 |---|---|---|---|---|
-| PaySitters / Matt Stephenson | Sep 4 call with Matt, investor deck sent; Sep 1 invoice re-issued by Chloe | 3 | WARM | Protect. Close the Phase 1 invoice. |
+| PaySitters / Matt Stephenson | Sep 7 Matt sent deck feedback for the R1 Capital pitch; Sep 4 call; Sep 1 invoice re-issued by Chloe | 0 | WARM | Protect. Close the Phase 1 invoice. |
 | Sunnie / Athens (Viable Synergy) | Chris → Sunnie, Aug 14. No reply. | 24 | COLD | One clean reopen. Ask for a date. |
 | Berman & Killeen | Paul Berman ↔ Chloe, Aug 17. BK principals meeting was Aug 27. No follow-up on record. | 21 | COLD | Delivery update from Chloe. Client must see momentum. |
 | NeuralSeek / Lawrence | Lawrence → Chris, Aug 20, inbound, unanswered. $1.6M rollout was dated Aug 27. | 18 | COLD, highest dollar risk | Reply today. Set a demo date or move the rollout date in writing. |
@@ -24,14 +24,14 @@ Two findings that change the plan:
 
 | Day | Touch | Channel | Owner | Angle |
 |---|---|---|---|---|
-| Mon 9/8 | NeuralSeek / Lawrence | Reply on Lawrence's Aug 20 thread, cc matt@pipeline.help | Chris | "You wrote, we went quiet, here is the date." Name the demo date and what OB.1 brings. |
-| Mon 9/8 | Troveo / Sarah | Reply in thread | Chris | Straight answer. Book 20 minutes next week or say it restarts in October. |
-| Tue 9/9 | Sunnie / Athens | New email | Chris | Reopen with one concrete co-pursuit and a working session date. Settle the Athens $11K paid-or-open question inside the note. |
-| Tue 9/9 | Berman & Killeen | Email to Paul Berman, cc Erin | Chloe | What shipped since Aug 27, what ships next, one ask. |
-| Wed 9/10 | A2C / Spitzer | Email to Spitzer, cc Brent, Kaull | Chris | One line: is governance-as-a-service on the 2026 roadmap? A no is useful. |
-| Wed 9/10 | PaySitters / Matt | Reply on the investor-assets thread | Chris | Confirm Phase 1 invoice path and Sept scope lock. Keep it short; the relationship is live. |
-| Thu 9/11 | Archway, CeCe TV | Decision, not a send | Chris | Confirm offline channel or demote. Free the forecast. |
-| Fri 9/12 | Scorecard | Instinct reports touches sent, replies, meetings booked | Instinct | Feeds the two-week metrics. |
+| Tue 9/8 | NeuralSeek / Lawrence | Reply on Lawrence's Aug 20 thread, cc matt@pipeline.help | Chris | "You wrote, we went quiet, here is the date." Name the demo date and what OB.1 brings. |
+| Tue 9/8 | Troveo / Sarah | Reply in thread | Chris | Straight answer. Book 20 minutes next week or say it restarts in October. |
+| Wed 9/9 | Sunnie / Athens | New email | Chris | Reopen with one concrete co-pursuit and a working session date. Settle the Athens $11K paid-or-open question inside the note. |
+| Wed 9/9 | Berman & Killeen | Email to Paul Berman, cc Erin | Chloe | What shipped since Aug 27, what ships next, one ask. |
+| Thu 9/10 | A2C / Spitzer | Email to Spitzer, cc Brent, Kaull | Chris | One line: is governance-as-a-service on the 2026 roadmap? A no is useful. |
+| Mon 9/7 (tonight) | PaySitters / Matt | Reply on the investor-assets thread | Chris | Matt sent full deck feedback today ahead of the R1 Capital pitch Tue 2:00 ET. Thank him, name the changes, one line on the Phase 1 invoice. |
+| Fri 9/11 | Archway, CeCe TV | Decision, not a send | Chris | Confirm offline channel or demote. Free the forecast. |
+| Fri 9/11 (EOD) | Scorecard | Instinct reports touches sent, replies, meetings booked | Instinct | Feeds the two-week metrics. |
 
 ## Division of labor with Instinct
 
