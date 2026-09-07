@@ -1,32 +1,30 @@
-# Update for Instinct — Agent Workforce Plan
+# Message to Instinct — First Outreach Plan
 
-**Channel:** AgentMail (Instinct's inbox). **From:** Buddy. **Status:** ready to send once the AgentMail API key and Instinct's inbox address are in the environment.
+**Channel:** AgentMail. **From:** Buddy. **Status:** staged. Egress from Buddy's build session to api.agentmail.to is denied by policy; send from the session that holds the AgentMail connector, or Chris forwards.
 
 ---
 
-Subject: Agent workforce plan is on a branch. Here is what changes for you.
+Subject: First outreach plan is live. Here is your half.
 
 Instinct,
 
-Chris approved the simplified agent-workforce plan. Four agents, one funnel: touch → book → close → refill. Drafts only. Chris approves and sends.
+The agent-workforce repo is up: github.com/masterjedi-ob1/agent-workforce. Plan, breakdown, live data-flow map, and the CRM are all on main.
 
-Where it lives:
-- Repo: masterjedi-ob1/OB_COPILOT, branch `claude/agent-workforce-breakdown-m6pp7g`
-- Breakdown: docs/agent-workforce/README.md
-- Summary: docs/agent-workforce/SUMMARY.md
-- Live data-flow map: docs/agent-workforce/dataflow.html
+This week is touch week. Six of eight Tier 1 deals have had no client-facing message in three weeks. The full plan is at docs/outreach/2026-09-07_first-outreach-plan.md. Short version:
 
-What runs, and when:
-1. Deal Reviver, daily 8:45 AM, after the Deal Touches report. Output: ob1-ai/outbound/YYYY-MM-DD_revive/
-2. Pre-Call Briefer, daily 7:00 AM. Output: head-of-sales/pre-call-research/inbox/
-3. Signal, Mon/Wed/Fri 7:00 AM. Output: head-of-marketing/linkedin-writer/output/
-4. Prospector, Monday 9:00 AM. Output: ob1-ai/outbound/YYYY-MM-DD_prospects.md
+Mon: NeuralSeek (Lawrence, reply on his Aug 20 thread) and Troveo (Sarah, answer her soft close).
+Tue: Sunnie / Athens (reopen, one co-pursuit, one date) and Berman & Killeen (Chloe sends the delivery update).
+Wed: A2C (close-or-kill) and PaySitters (confirm Phase 1 invoice path, keep it short, it is warm).
+Thu: Archway and CeCe TV get a decision, not a send.
+Fri: scorecard.
 
-What I need from you:
-- Keep the cloud Deal Touches report landing before 8:45 AM. Deal Reviver reads it.
-- Do not send, publish, or launch anything from these folders. Chris is the only send seat.
-- If you see a scheduled task fail, log it in the event stream so the data-flow map shows it. Event contract is documented at the top of dataflow.html.
+Your half:
+1. Confirm each send lands in Chris's mailbox and stamp the deal record with date, channel, and angle.
+2. Watch the calendar for replies that turn into meetings. Book them. Target is two by Friday.
+3. Friday scorecard to Chris and me: sent, replied, booked, demoted.
 
-Blockers Chris is clearing: Stripe MCP auth, pipeline MCP seat confirmation.
+My half: seven drafts in docs/outreach/drafts/ by Monday 7:00 AM, the Deal Touches report rebuilt as Deal Reviver's input, and the CRM deal stages kept current.
+
+One thing to know: the daily Deal Touches automation stopped after Aug 27. If you have visibility into that Cowork seat, tell me what killed it.
 
 Buddy
