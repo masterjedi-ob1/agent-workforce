@@ -1,0 +1,485 @@
+<title>OB.1 Live Data Flow</title>
+<style>
+/*
+EVENT CONTRACT (window.OB1_FLOW.push(event)):
+{
+  "ts": "2026-09-05T08:45:00Z",   // ISO timestamp
+  "agent": "reviver|briefer|signal|prospector|gate",
+  "type": "fire|draft|send|error|metric",
+  "message": "plain text log line",
+  "metric": { "id": "cold|drafted|sent|linkedin|prospects", "value": 5 }  // optional, only for type:"metric"
+}
+Only "message" is required beyond ts/agent/type. A real feed (webhook or file poll)
+can call window.OB1_FLOW.push(event) directly; the page renders log entries and,
+for metric events, moves the matching KPI toward the reported value.
+*/
+:root{
+  --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef1f6; --ink:#12181f; --ink-dim:#4b5563;
+  --line:#d7dee7; --cyan:#0a7ea6; --amber:#a5650a; --green:#1c7c4a; --red:#b3261e;
+  --node-src:#eef2f7; --node-agent:#e7f0f4; --node-out:#f1eee7;
+  --shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1118; --panel:#141b25; --panel2:#1a2230; --ink:#e6ebf2; --ink-dim:#9aa7b8;
+    --line:#2a3548; --cyan:#5fd0f3; --amber:#e0a94e; --green:#5fd08d; --red:#f27267;
+    --node-src:#182233; --node-agent:#17222b; --node-out:#241f18;
+    --shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1118; --panel:#141b25; --panel2:#1a2230; --ink:#e6ebf2; --ink-dim:#9aa7b8;
+  --line:#2a3548; --cyan:#5fd0f3; --amber:#e0a94e; --green:#5fd08d; --red:#f27267;
+  --node-src:#182233; --node-agent:#17222b; --node-out:#241f18;
+  --shadow: 0 1px 3px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1400px;margin:0 auto;padding:20px 20px 32px}
+header h1{font-size:20px;margin:0 0 4px;letter-spacing:.2px}
+header p{margin:0 0 16px;color:var(--ink-dim);font-size:13px;max-width:820px;line-height:1.5}
+.kpi-row{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow)}
+.kpi .label{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kpi .val{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .target{font-size:11px;color:var(--ink-dim)}
+.kpi.ok .val{color:var(--green)}
+.kpi.warn .val{color:var(--amber)}
+.main-row{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start}
+.diagram-shell{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow-x:auto;overflow-y:hidden}
+.diagram-shell svg{display:block;min-width:920px}
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:10px 12px}
+.panel h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-dim)}
+.log{display:flex;flex-direction:column-reverse;gap:6px;max-height:420px;overflow-y:auto;font-size:12px}
+.log-entry{border-left:2px solid var(--cyan);padding:2px 0 2px 8px;line-height:1.4}
+.log-entry .t{color:var(--ink-dim);margin-right:6px;font-variant-numeric:tabular-nums}
+.log-entry.gate{border-left-color:var(--amber)}
+.log-entry.err{border-left-color:var(--red)}
+.toggle-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);margin-top:2px}
+.toggle-row input{accent-color:var(--cyan)}
+svg text{fill:var(--ink);font-family:inherit}
+.node-rect{fill:var(--node-src);stroke:var(--line);stroke-width:1;cursor:default;transition:stroke .15s,stroke-width .15s}
+.node-rect.agent{fill:var(--node-agent)}
+.node-rect.out{fill:var(--node-out)}
+.node-rect.gate{fill:none;stroke:var(--amber);stroke-width:1.5;stroke-dasharray:4 3}
+.node-rect.agent{cursor:pointer}
+.node-rect.hi{stroke:var(--cyan);stroke-width:2}
+.node-label{font-size:11px}
+.node-sub{font-size:9px;fill:var(--ink-dim)}
+.edge{fill:none;stroke:var(--line);stroke-width:1.2}
+.edge.hi{stroke:var(--cyan);stroke-width:2}
+.particle{fill:var(--cyan)}
+.stage-strip rect{fill:var(--panel2);stroke:var(--line)}
+.stage-strip text{fill:var(--ink-dim);font-size:11px;letter-spacing:.06em}
+.stage-strip .active{fill:var(--cyan)}
+.gate-label{fill:var(--amber);font-size:11px;font-weight:600}
+.tooltip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:11px;line-height:1.5;box-shadow:var(--shadow);max-width:240px;z-index:5;display:none}
+.tooltip b{display:block;font-size:12px;margin-bottom:2px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--ink-dim);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+footer{margin-top:20px;border-top:1px solid var(--line);padding-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+footer h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-dim);margin:0 0 8px}
+footer ul{margin:0;padding-left:18px;font-size:12px;color:var(--ink-dim);line-height:1.6}
+footer li b{color:var(--ink)}
+.blocker{color:var(--red)}
+@media (max-width:900px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .main-row{grid-template-columns:1fr}
+  footer{grid-template-columns:1fr}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>OB.1 Agent Workforce — Live Data Flow</h1>
+    <p>4 agents, one funnel: touch &rarr; book &rarr; close &rarr; refill. Drafts only. You approve and hit send.</p>
+  </header>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="main-row">
+    <div class="diagram-shell">
+      <svg id="svg" viewBox="0 0 1440 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Agent workforce data flow diagram"></svg>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Event log</h3>
+        <div class="log" id="logList"></div>
+        <label class="toggle-row"><input type="checkbox" id="simToggle" checked> Simulated stream</label>
+      </div>
+      <div class="panel">
+        <h3>Legend</h3>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--green)"></i>healthy automation</span>
+          <span><i class="dot" style="background:var(--cyan)"></i>data flow</span>
+          <span><i class="dot" style="background:var(--amber)"></i>human approval gate</span>
+          <span><i class="dot" style="background:var(--red)"></i>blocker</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <h3>2-week success metrics</h3>
+      <ul>
+        <li><b>Tier-1 COLD:</b> 8 &rarr; &le;3 (touched or reclassified)</li>
+        <li><b>Client touches/week:</b> 0 &rarr; &ge;10 drafted, &ge;6 sent</li>
+        <li><b>LinkedIn:</b> &ge;2 of 3 weekly drafts actually published</li>
+        <li><b>New qualified prospects staged:</b> &ge;10</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Blockers</h3>
+      <ul>
+        <li class="blocker"><b>Stripe MCP auth</b> — unresolved since Jun 5; blocks revenue verification everywhere</li>
+        <li class="blocker"><b>Pipeline MCP account state</b> — LinkedIn seat status unconfirmed before Prospector relies on it</li>
+      </ul>
+    </div>
+  </footer>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function(){
+  "use strict";
+  var svgNS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("svg");
+  var tooltip = document.getElementById("tooltip");
+
+  // ---- layout data ----------------------------------------------------
+  var sources = [
+    {id:"gmail", label:"Gmail", sub:"read", y:40},
+    {id:"calendar", label:"Calendar", sub:"read", y:100},
+    {id:"granola", label:"Granola", sub:"meeting history", y:160},
+    {id:"pipeline", label:"pipeline MCP", sub:"LinkedIn prospect db", y:220},
+    {id:"readylink", label:"ReadyLink", sub:"ob-nucleus leads", y:280},
+    {id:"neolead", label:"neo-lead-data-raw", sub:"raw lead data", y:340},
+    {id:"touches", label:"Deal Touches report", sub:"cloud · healthy", y:400, healthy:true}
+  ];
+  var agents = [
+    {id:"reviver", label:"1. Deal Reviver", sub:"daily 8:45", y:60,
+      trigger:"Daily 8:45 AM, after Deal Touches lands", connectors:"Gmail, Calendar, Granola",
+      output:"ob1-ai/outbound/YYYY-MM-DD_revive/", inputs:["gmail","calendar","granola","touches"], outputId:"out-revive"},
+    {id:"briefer", label:"2. Pre-Call Briefer", sub:"daily 7:00", y:180,
+      trigger:"Daily 7:00 AM", connectors:"Calendar, Granola, Gmail",
+      output:"head-of-sales/pre-call-research/inbox/", inputs:["gmail","calendar","granola"], outputId:"out-briefer"},
+    {id:"signal", label:"3. Signal LinkedIn", sub:"MWF 7:00", y:300,
+      trigger:"Mon/Wed/Fri 7:00 AM", connectors:"internal work log, brand voice",
+      output:"head-of-marketing/linkedin-writer/output/", inputs:["gmail","calendar","granola"], outputId:"out-signal"},
+    {id:"prospector", label:"4. Prospector", sub:"Mon 9:00", y:420,
+      trigger:"Weekly, Monday 9:00 AM", connectors:"pipeline MCP, ReadyLink, neo-lead-data-raw",
+      output:"outbound/YYYY-MM-DD_prospects.md", inputs:["pipeline","readylink","neolead"], outputId:"out-prospector"}
+  ];
+  var outputs = [
+    {id:"out-revive", label:"outbound/…_revive/", y:60, agent:"reviver"},
+    {id:"out-briefer", label:"pre-call-research/inbox/", y:180, agent:"briefer"},
+    {id:"out-signal", label:"linkedin-writer/output/", y:300, agent:"signal"},
+    {id:"out-prospector", label:"outbound/…_prospects.md", y:420, agent:"prospector"}
+  ];
+
+  var COL_SRC = 100, COL_AGENT = 560, COL_OUT = 940, COL_GATE = 1210;
+  var NODE_W_SRC = 150, NODE_W_AGENT = 170, NODE_W_OUT = 190, NODE_H = 40;
+
+  function nodeCenter(col, w, y){ return {x:col+w/2, y:y+NODE_H/2}; }
+
+  // build lookup of positions
+  var pos = {};
+  sources.forEach(function(n){ pos[n.id] = {x:COL_SRC, y:n.y, w:NODE_W_SRC}; });
+  agents.forEach(function(n){ pos[n.id] = {x:COL_AGENT, y:n.y, w:NODE_W_AGENT}; });
+  outputs.forEach(function(n){ pos[n.id] = {x:COL_OUT, y:n.y, w:NODE_W_OUT}; });
+  var gateY = 240;
+  pos["gate"] = {x:COL_GATE, y:gateY, w:170};
+
+  var edges = [];
+  agents.forEach(function(a){
+    a.inputs.forEach(function(src){ edges.push({from:src, to:a.id, kind:"in"}); });
+    edges.push({from:a.id, to:a.outputId, kind:"out"});
+    edges.push({from:a.outputId, to:"gate", kind:"gate"});
+  });
+  // refill loop: prospector -> touch (visual feedback into stage strip handled separately)
+
+  function svgEl(tag, attrs){
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function pathBetween(a, b){
+    var p1 = nodeCenter(pos[a].x, pos[a].w, pos[a].y);
+    var p2 = nodeCenter(pos[b].x, pos[b].w, pos[b].y);
+    var x1 = pos[a].x + pos[a].w, y1 = p1.y;
+    var x2 = pos[b].x, y2 = p2.y;
+    var mx = (x1+x2)/2;
+    return {d:"M "+x1+" "+y1+" C "+mx+" "+y1+", "+mx+" "+y2+", "+x2+" "+y2, x1:x1,y1:y1,x2:x2,y2:y2};
+  }
+
+  var edgeEls = {};
+  var edgeLayer = svgEl("g", {});
+  svg.appendChild(edgeLayer);
+
+  edges.forEach(function(e, i){
+    var info = pathBetween(e.from, e.to);
+    var path = svgEl("path", {class:"edge", d:info.d, "data-from":e.from, "data-to":e.to});
+    edgeLayer.appendChild(path);
+    edgeEls[e.from+"__"+e.to] = {path:path, info:info};
+  });
+
+  // stage strip
+  var stages = ["TOUCH","BOOK","CLOSE","REFILL"];
+  var stripY = 560, stripH = 40, stripX = 100, stripW = 1240;
+  var stageW = stripW/4;
+  var stageG = svgEl("g", {class:"stage-strip"});
+  stages.forEach(function(s, i){
+    var r = svgEl("rect", {x:stripX+i*stageW, y:stripY, width:stageW-6, height:stripH, rx:6});
+    stageG.appendChild(r);
+    var t = svgEl("text", {x:stripX+i*stageW+stageW/2-3, y:stripY+stripH/2+4, "text-anchor":"middle"});
+    t.textContent = s;
+    stageG.appendChild(t);
+  });
+  svg.appendChild(stageG);
+
+  // refill loop arrow: prospector output -> back to TOUCH stage (visual only)
+  var loopPath = svgEl("path", {
+    class:"edge",
+    d:"M "+(pos["prospector"].x) +" "+ (pos["prospector"].y+NODE_H/2)+
+      " C 300 520, 160 560, "+(stripX+stageW/2)+" "+stripY,
+    "stroke-dasharray":"3 3"
+  });
+  svg.appendChild(loopPath);
+
+  // ---- node drawing ----
+  var nodeEls = {}; // id -> {rect, group}
+
+  function drawNode(n, col, w, cls, extra){
+    var g = svgEl("g", {class:"node-group", "data-id":n.id});
+    var rect = svgEl("rect", {class:"node-rect "+cls, x:col, y:n.y, width:w, height:NODE_H, rx:8});
+    g.appendChild(rect);
+    var label = svgEl("text", {class:"node-label", x:col+10, y:n.y+17});
+    label.textContent = n.label;
+    g.appendChild(label);
+    if (n.sub){
+      var sub = svgEl("text", {class:"node-sub", x:col+10, y:n.y+31});
+      sub.textContent = n.sub + (n.healthy ? "  ●" : "");
+      if (n.healthy) sub.style.fill = "var(--green)";
+      g.appendChild(sub);
+    }
+    svg.appendChild(g);
+    nodeEls[n.id] = {rect:rect, group:g, data:n};
+    return g;
+  }
+
+  sources.forEach(function(n){ drawNode(n, COL_SRC, NODE_W_SRC, "src"); });
+  agents.forEach(function(n){ drawNode(n, COL_AGENT, NODE_W_AGENT, "agent"); });
+  outputs.forEach(function(n){ drawNode(n, COL_OUT, NODE_W_OUT, "out"); });
+
+  // gate node
+  var gateGroup = svgEl("g", {class:"node-group", "data-id":"gate"});
+  var gateRect = svgEl("rect", {class:"node-rect gate", x:COL_GATE, y:gateY, width:170, height:NODE_H, rx:8});
+  gateGroup.appendChild(gateRect);
+  var gateText = svgEl("text", {class:"gate-label", x:COL_GATE+10, y:gateY+17});
+  gateText.textContent = "Chris approves + sends";
+  gateGroup.appendChild(gateText);
+  var gateSub = svgEl("text", {class:"node-sub", x:COL_GATE+10, y:gateY+31});
+  gateSub.textContent = "nothing auto-sends";
+  gateGroup.appendChild(gateSub);
+  svg.appendChild(gateGroup);
+  nodeEls["gate"] = {rect:gateRect, group:gateGroup, data:{label:"Chris approves + sends", sub:"human gate"}};
+
+  // column headers
+  [["Sources", COL_SRC], ["Agents", COL_AGENT], ["Outputs (drafts)", COL_OUT], ["Human gate", COL_GATE]].forEach(function(h){
+    var t = svgEl("text", {x:h[1], y:20, class:"node-sub", style:"font-weight:600;fill:var(--ink-dim)"});
+    t.textContent = h[0];
+    svg.appendChild(t);
+  });
+
+  // ---- tooltip + hover highlight ----
+  var tips = {};
+  agents.forEach(function(a){
+    tips[a.id] = "<b>"+a.label+"</b>Trigger: "+a.trigger+"<br>Connectors: "+a.connectors+"<br>Output: "+a.output;
+  });
+  sources.forEach(function(s){ tips[s.id] = "<b>"+s.label+"</b>"+(s.sub||""); });
+  outputs.forEach(function(o){ tips[o.id] = "<b>"+o.label+"</b>drafted output, awaiting approval"; });
+  tips["gate"] = "<b>Chris approves + sends</b>Every draft stops here. Nothing publishes or sends automatically.";
+
+  function relatedEdges(id){
+    return edges.filter(function(e){ return e.from===id || e.to===id; });
+  }
+
+  function setHover(id, on){
+    if (!nodeEls[id]) return;
+    nodeEls[id].rect.classList.toggle("hi", on);
+    relatedEdges(id).forEach(function(e){
+      var key = e.from+"__"+e.to;
+      if (edgeEls[key]) edgeEls[key].path.classList.toggle("hi", on);
+    });
+  }
+
+  Object.keys(nodeEls).forEach(function(id){
+    var el = nodeEls[id].group;
+    el.addEventListener("mouseenter", function(evt){
+      setHover(id, true);
+      if (tips[id]){
+        tooltip.innerHTML = tips[id];
+        tooltip.style.display = "block";
+      }
+    });
+    el.addEventListener("mousemove", function(evt){
+      var rect = svg.parentElement.getBoundingClientRect();
+      tooltip.style.left = (evt.clientX - rect.left + 16) + "px";
+      tooltip.style.top = (evt.clientY - rect.top + 8) + "px";
+    });
+    el.addEventListener("mouseleave", function(){
+      setHover(id, false);
+      tooltip.style.display = "none";
+    });
+  });
+
+  // ---- particles ----
+  var particles = [];
+  function spawnParticle(fromId, toId, colorClass){
+    var key = fromId+"__"+toId;
+    var e = edgeEls[key];
+    if (!e) return;
+    var dot = svgEl("circle", {class:"particle", r:3.2});
+    svg.appendChild(dot);
+    particles.push({el:dot, path:e.path, t:0, speed:0.012 + Math.random()*0.01});
+  }
+
+  function fireAgent(agent){
+    agent.inputs.forEach(function(src){ spawnParticle(src, agent.id); });
+    setTimeout(function(){ spawnParticle(agent.id, agent.outputId); }, 250);
+    setTimeout(function(){ spawnParticle(agent.outputId, "gate"); }, 500);
+  }
+
+  agents.forEach(function(a){
+    nodeEls[a.id].group.style.cursor = "pointer";
+    nodeEls[a.id].group.addEventListener("click", function(){
+      fireAgent(a);
+      log(a.id, "fire", a.label + " fired manually — drafting now");
+    });
+  });
+
+  function animate(){
+    particles = particles.filter(function(p){
+      p.t += p.speed;
+      if (p.t >= 1) { p.el.remove(); return false; }
+      var len = p.path.getTotalLength();
+      var pt = p.path.getPointAtLength(p.t*len);
+      p.el.setAttribute("cx", pt.x);
+      p.el.setAttribute("cy", pt.y);
+      return true;
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // ---- KPIs ----
+  var kpiDefs = [
+    {id:"cold", label:"Tier-1 COLD deals", start:8, target:3, dir:"down"},
+    {id:"drafted", label:"Touches drafted/wk", start:0, target:10, dir:"up"},
+    {id:"sent", label:"Touches sent/wk", start:0, target:6, dir:"up"},
+    {id:"linkedin", label:"LinkedIn drafts pub.", start:0, target:2, dir:"up", suffix:"/3"},
+    {id:"prospects", label:"Prospects staged", start:0, target:10, dir:"up"}
+  ];
+  var kpiState = {};
+  kpiDefs.forEach(function(k){ kpiState[k.id] = k.start; });
+
+  var kpiRow = document.getElementById("kpiRow");
+  var kpiEls = {};
+  kpiDefs.forEach(function(k){
+    var div = document.createElement("div");
+    div.className = "kpi";
+    div.innerHTML = '<div class="label">'+k.label+'</div><div class="val" id="kpi-'+k.id+'">'+k.start+(k.suffix||'')+'</div><div class="target">target '+(k.dir==="down"?"≤":"≥")+k.target+(k.suffix||'')+'</div>';
+    kpiRow.appendChild(div);
+    kpiEls[k.id] = div;
+  });
+
+  function refreshKpi(id){
+    var k = kpiDefs.find(function(d){return d.id===id;});
+    var val = kpiState[id];
+    var el = document.getElementById("kpi-"+id);
+    el.textContent = Math.round(val) + (k.suffix||"");
+    var met = k.dir==="down" ? val<=k.target : val>=k.target;
+    kpiEls[id].className = "kpi" + (met ? " ok" : " warn");
+  }
+  kpiDefs.forEach(function(k){ refreshKpi(k.id); });
+
+  // ---- event log ----
+  var logList = document.getElementById("logList");
+  var MAX_LOG = 12;
+  function log(agent, type, message){
+    var entry = document.createElement("div");
+    entry.className = "log-entry" + (agent==="gate" ? " gate" : "") + (type==="error" ? " err" : "");
+    var d = new Date();
+    var ts = d.toTimeString().slice(0,8);
+    entry.innerHTML = '<span class="t">'+ts+'</span>'+message;
+    logList.appendChild(entry);
+    while (logList.children.length > MAX_LOG) logList.removeChild(logList.firstChild);
+    logList.scrollTop = logList.scrollHeight;
+  }
+
+  log("system", "info", "Live data flow initialized — simulated stream running");
+
+  // ---- public API + simulated stream ----
+  var simOn = true;
+  document.getElementById("simToggle").addEventListener("change", function(e){
+    simOn = e.target.checked;
+    log("system", "info", "Simulated stream " + (simOn ? "resumed" : "paused"));
+  });
+
+  function applyMetric(m){
+    if (!m || !kpiState.hasOwnProperty(m.id)) return;
+    kpiState[m.id] = m.value;
+    refreshKpi(m.id);
+  }
+
+  window.OB1_FLOW = {
+    push: function(event){
+      if (!event) return;
+      if (event.type === "metric" && event.metric) applyMetric(event.metric);
+      log(event.agent||"external", event.type||"info", event.message||"");
+    }
+  };
+
+  // simulated tick engine — moves KPIs toward target over ~60s then hovers
+  var simMessages = {
+    reviver: ["drafted revive email for Acme Co","drafted call script for Nimbus Ltd","cross-referenced last Gmail thread"],
+    briefer: ["built pre-call brief for 10:00 external meeting","pulled Granola history for Northwind","flagged 3 open commitments"],
+    signal: ["drafted MWF LinkedIn post from audit findings","added 30-second publish checklist"],
+    prospector: ["scored 12 prospects against ICP","staged 3 personalized openers"],
+    gate: ["review queue updated — awaiting Chris approval"]
+  };
+  var tickCount = 0;
+  var agentCycle = ["reviver","briefer","signal","prospector"];
+
+  function simTick(){
+    if (simOn){
+      tickCount++;
+      var progress = Math.min(tickCount / 40, 1); // ~60s at 1.5s/tick
+      kpiDefs.forEach(function(k){
+        var target = k.target;
+        var cur = kpiState[k.id];
+        var goal = k.dir === "down" ? k.start - (k.start - target) * progress : k.start + (target - k.start) * progress;
+        // small jitter once near goal
+        var jitter = 0; // counts are integers; no hover jitter
+        kpiState[k.id] = Math.max(0, goal + jitter);
+        refreshKpi(k.id);
+      });
+
+      var agentId = agentCycle[tickCount % agentCycle.length];
+      var agentDef = agents.find(function(a){return a.id===agentId;});
+      var msgs = simMessages[agentId];
+      var msg = msgs[Math.floor(Math.random()*msgs.length)];
+      log(agentId, "draft", agentDef.label + ": " + msg);
+      if (tickCount % 4 === 0) fireAgent(agentDef);
+      if (tickCount % 6 === 0) log("gate", "gate", simMessages.gate[0]);
+    }
+  }
+  setInterval(simTick, 1500);
+
+})();
+</script>
